@@ -1,5 +1,7 @@
-import React, { Component } from 'react'
-import { Text, StyleSheet, View } from 'react-native'
+import React, {Component} from 'react';
+import {Text, StyleSheet, View} from 'react-native';
+import {openDatabase} from 'react-native-sqlite-storage';
+var db = openDatabase({name: 'UserDatabase.db'});
 
 export default class Tasks extends Component {
   render() {
@@ -7,7 +9,7 @@ export default class Tasks extends Component {
       <View style={styles.container}>
         <Text> Tasks </Text>
       </View>
-    )
+    );
   }
 }
 
@@ -17,5 +19,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffff77',
     justifyContent: 'center',
     alignItems: 'center',
-  }
-})
+  },
+});
