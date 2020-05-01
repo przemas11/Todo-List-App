@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import {Text, StyleSheet, View} from 'react-native';
+
 import {openDatabase} from 'react-native-sqlite-storage';
 var db = openDatabase({name: 'UserDatabase.db'});
 

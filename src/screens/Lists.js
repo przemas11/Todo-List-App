@@ -1,41 +1,18 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Text, StyleSheet, View, FlatList, TouchableOpacity} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {openDatabase} from 'react-native-sqlite-storage';
 import {TextInput} from 'react-native-gesture-handler';
 import MyButton from '../interface/MyButton';
 import MySmallButton from '../interface/MySmallButton';
+
+import {openDatabase} from 'react-native-sqlite-storage';
 var db = openDatabase({name: 'UserDatabase.db'});
 
-const tmp = [
-  {key: '1', title: 'Test1'},
-  {key: '2', title: 'Test2'},
-  {key: '3', title: 'Test3'},
-  {key: '4', title: 'Test4'},
-  {key: '5', title: 'Test5'},
-  {key: '6', title: 'Test6'},
-  {key: '7', title: 'Test7'},
-  {key: '8', title: 'Test8'},
-  {key: '9', title: 'Test9'},
-  {key: '10', title: 'Test10'},
-  {key: '11', title: 'Test11'},
-  {key: '12', title: 'Test12'},
-  {key: '13', title: 'Test13'},
-];
-
-export default function Lists() {
+export default function Lists(props, {listTitleCallback}) {
   const [ListName, setListName] = useState('');
   const [ShowInputBar, setShowInputBar] = useState(false);
-
-  function _onPress(item) {
-    console.log('Pressed');
-    console.log(item);
-  }
-
-  function _onLongPres(item) {
-    console.log('Long pressed');
-    console.log(item);
-  }
+  const [ListsDB, setListsDB] = useState([]);
+  const [InputMode, setInputMode] = useState(0);
 
   function _showInputBar() {
     setShowInputBar(true);
@@ -43,14 +20,145 @@ export default function Lists() {
 
   function _hideInputBar() {
     setShowInputBar(false);
+    setListName('');
+  }
+
+  function _inputBarConfirm(item) {
+    //ADD NEW LIST
+    if (InputMode === 0) {
+      if (ListName) {
+        //insert new list to the DB
+        db.transaction(function(tx) {
+          tx.executeSql(
+            'INSERT INTO lists(title) VALUES (?); OUTPUT Inserted.id',
+            [ListName],
+            function(tx1, res) {
+              //create new table with tasks
+              db.transaction(function(tx2) {
+                console.log('tworzenie nowej bazy zadan, id: ' + res.insertId);
+                tx2.executeSql(
+                  `CREATE TABLE IF NOT EXISTS list${
+                    res.insertId
+                  }(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, done INTEGER NOT NULL);`,
+                  [],
+                  function(tx3, res2) {},
+                );
+              });
+            },
+          );
+        });
+        _hideInputBar();
+      }
+    }
+    //EDIT EXISTING LIST'S NAME
+    else if (InputMode === 1) {
+      if (ListName) {
+        console.log('edit');
+      }
+    }
+  }
+
+  function _inputBarCancel() {
+    _hideInputBar();
+  }
+
+  //Get all lists from the DB
+  function _getLists() {
+    db.transaction(function(tx) {
+      tx.executeSql('SELECT * FROM lists;', [], function(_tx, res) {
+        if (res.rows.length > 0) {
+          let buffer = [];
+          for (let i = 0; i < res.rows.length; i++) {
+            buffer.push(res.rows.item(i));
+          }
+          setListsDB(buffer);
+          //console.log(buffer);
+        } else {
+          setListsDB([]);
+        }
+      });
+    });
+  }
+
+  //Delete selected lists from the DB
+  function _deleteList(id) {
+    //delete the task list table for selected category
+    db.transaction(function(tx) {
+      tx.executeSql(`DROP TABLE IF EXISTS list${id};`, [], function(
+        tx2,
+        res,
+      ) {});
+    });
+    //delete the category
+    db.transaction(function(tx) {
+      tx.executeSql('DELETE FROM lists WHERE id=?;', [id], function(
+        tx2,
+        res,
+      ) {});
+    });
+  }
+
+  function _debugLogAllTables() {
+    db.transaction(function(tx) {
+      tx.executeSql(
+        "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';",
+        [],
+        function(_tx, res) {
+          if (res.rows.length > 0) {
+            console.log('All tables in the DB:');
+            for (let i = 0; i < res.rows.length; i++) {
+              console.log(res.rows.item(i));
+            }
+          } else {
+            console.log('No tables in the DB');
+          }
+        },
+      );
+    });
+  }
+
+  function _debugDeleteAllTables() {
+    console.log('usuwam all');
+  }
+
+  //Reload lists when refreshing the DOM
+  useEffect(() => {
+    _getLists();
+  });
+
+  function _onPress(item) {
+    //open task list for selected category
+    props.navigation.navigate('Tasks');
+  }
+
+  function _onLongPress(id) {
+    _deleteList(id);
+  }
+
+  function _addNewList() {
+    setInputMode(0);
+    _showInputBar();
+  }
+
+  function _editListName() {
+    setInputMode(1);
+    _showInputBar();
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.bar}>
-        <MyButton title={'NEW'} onPress={() => _showInputBar()} />
-        <MyButton title={'EDIT'} onPress={() => console.log('Edit')} />
-        <MyButton title={'DELETE'} onPress={() => console.log('Delete')} />
+        <MyButton title={'NEW'} onPress={() => _addNewList()} />
+        <MyButton title={'EDIT'} onPress={() => _editListName()} />
+        <MyButton title={'DELETE'} onPress={() => console.log('delet')} />
+      </View>
+
+      <View style={styles.bar}>
+        <MyButton title={'LOG ALL'} onPress={() => _debugLogAllTables()} />
+        {/* <MyButton
+          title={'DELETE ALL'}
+          onPress={() => _debugDeleteAllTables()}
+        /> */}
       </View>
 
       {ShowInputBar && (
@@ -60,14 +168,16 @@ export default function Lists() {
             placeholder={'New list name'}
             onChangeText={text => {
               setListName(text);
-              console.log(text);
             }}
           />
           <View style={styles.bar}>
-            <MySmallButton title={'Add'} onPress={() => console.log('Add')} />
+            <MySmallButton
+              title={'Confirm'}
+              onPress={() => _inputBarConfirm()}
+            />
             <MySmallButton
               title={'Cancel'}
-              onPress={() => _hideInputBar()}
+              onPress={() => _inputBarCancel()}
               value={ListName}
             />
           </View>
@@ -75,24 +185,17 @@ export default function Lists() {
       )}
 
       <FlatList
-        data={tmp}
+        data={ListsDB}
         renderItem={({item}) => (
           <View style={styles.view}>
             <TouchableOpacity
               onPress={_onPress.bind(this, item)}
-              onLongPress={_onLongPres.bind(this, item)}>
+              onLongPress={_onLongPress.bind(this, item.id)}>
               <Text style={styles.item}>{item.title}</Text>
             </TouchableOpacity>
           </View>
         )}
       />
-      {/* <ScrollView style={styles.container}>
-        <Button
-          title="Go to tasks"
-
-          onPress={() => this.props.navigation.navigate('Tasks')}
-        />
-      </ScrollView> */}
     </View>
   );
 }
