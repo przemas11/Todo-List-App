@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {Text, StyleSheet, View, FlatList, TouchableOpacity} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+//import {useNavigation} from '@react-navigation/native';
 import {TextInput} from 'react-native-gesture-handler';
 import MyButton from '../interface/MyButton';
 import MySmallButton from '../interface/MySmallButton';
@@ -8,10 +8,12 @@ import MySmallButton from '../interface/MySmallButton';
 import {openDatabase} from 'react-native-sqlite-storage';
 var db = openDatabase({name: 'UserDatabase.db'});
 
-export default function Lists(props, {listTitleCallback}) {
+export default function Lists(props) {
   const [ListName, setListName] = useState('');
   const [ShowInputBar, setShowInputBar] = useState(false);
+  const [ShowDetailsBar, setShowDetailsBar] = useState(false);
   const [ListsDB, setListsDB] = useState([]);
+  const [CurrentList, setCurrentList] = useState(undefined);
   const [InputMode, setInputMode] = useState(0);
 
   function _showInputBar() {
@@ -23,7 +25,7 @@ export default function Lists(props, {listTitleCallback}) {
     setListName('');
   }
 
-  function _inputBarConfirm(item) {
+  function _inputBarConfirm() {
     //ADD NEW LIST
     if (InputMode === 0) {
       if (ListName) {
@@ -35,7 +37,9 @@ export default function Lists(props, {listTitleCallback}) {
             function(tx1, res) {
               //create new table with tasks
               db.transaction(function(tx2) {
-                console.log('tworzenie nowej bazy zadan, id: ' + res.insertId);
+                console.log(
+                  'Tworzenie nowej tabeli zadan, id: ' + res.insertId,
+                );
                 tx2.executeSql(
                   `CREATE TABLE IF NOT EXISTS list${
                     res.insertId
@@ -53,7 +57,16 @@ export default function Lists(props, {listTitleCallback}) {
     //EDIT EXISTING LIST'S NAME
     else if (InputMode === 1) {
       if (ListName) {
-        console.log('edit');
+        if (CurrentList) {
+          console.log('edit');
+          db.transaction(function(tx) {
+            tx.executeSql(
+              `UPDATE lists SET title = ? WHERE id = ${CurrentList.id};`,
+              [ListName],
+              function(tx1, res) {},
+            );
+          });
+        }
       }
     }
   }
@@ -80,24 +93,6 @@ export default function Lists(props, {listTitleCallback}) {
     });
   }
 
-  //Delete selected lists from the DB
-  function _deleteList(id) {
-    //delete the task list table for selected category
-    db.transaction(function(tx) {
-      tx.executeSql(`DROP TABLE IF EXISTS list${id};`, [], function(
-        tx2,
-        res,
-      ) {});
-    });
-    //delete the category
-    db.transaction(function(tx) {
-      tx.executeSql('DELETE FROM lists WHERE id=?;', [id], function(
-        tx2,
-        res,
-      ) {});
-    });
-  }
-
   function _debugLogAllTables() {
     db.transaction(function(tx) {
       tx.executeSql(
@@ -117,22 +112,22 @@ export default function Lists(props, {listTitleCallback}) {
     });
   }
 
-  function _debugDeleteAllTables() {
-    console.log('usuwam all');
-  }
-
   //Reload lists when refreshing the DOM
   useEffect(() => {
     _getLists();
   });
 
   function _onPress(item) {
+    setCurrentList(item);
     //open task list for selected category
     props.navigation.navigate('Tasks');
   }
 
-  function _onLongPress(id) {
-    _deleteList(id);
+  function _onLongPress(item) {
+    setShowDetailsBar(true);
+    _hideInputBar();
+    setCurrentList(item);
+    //_deleteList(id);
   }
 
   function _addNewList() {
@@ -143,41 +138,76 @@ export default function Lists(props, {listTitleCallback}) {
   function _editListName() {
     setInputMode(1);
     _showInputBar();
+    setShowDetailsBar(false);
+  }
+
+  //Delete selected lists from the DB
+  function _deleteList() {
+    //delete the task list table for selected category
+    if (CurrentList) {
+      db.transaction(function(tx) {
+        tx.executeSql(
+          `DROP TABLE IF EXISTS list${CurrentList.id};`,
+          [],
+          function(tx2, res) {},
+        );
+      });
+      //delete the category
+      db.transaction(function(tx) {
+        tx.executeSql(
+          'DELETE FROM lists WHERE id=?;',
+          [CurrentList.id],
+          function(tx2, res) {},
+        );
+      });
+    }
+    setCurrentList(undefined);
+    setShowDetailsBar(false);
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.bar}>
-        <MyButton title={'NEW'} onPress={() => _addNewList()} />
-        <MyButton title={'EDIT'} onPress={() => _editListName()} />
-        <MyButton title={'DELETE'} onPress={() => console.log('delet')} />
+        <MyButton
+          title={'Dodaj nową kategorię'}
+          onPress={() => _addNewList()}
+        />
       </View>
 
-      <View style={styles.bar}>
+      {/* <View style={styles.bar}>
         <MyButton title={'LOG ALL'} onPress={() => _debugLogAllTables()} />
-        {/* <MyButton
-          title={'DELETE ALL'}
-          onPress={() => _debugDeleteAllTables()}
-        /> */}
-      </View>
+      </View> */}
 
       {ShowInputBar && (
         <View style={styles.inputBar}>
           <TextInput
             style={styles.textInput}
-            placeholder={'New list name'}
+            placeholder={'Wpisz nazwę listy'}
             onChangeText={text => {
               setListName(text);
             }}
           />
           <View style={styles.bar}>
             <MySmallButton
-              title={'Confirm'}
+              title={'Potwierdź'}
               onPress={() => _inputBarConfirm()}
             />
             <MySmallButton
-              title={'Cancel'}
+              title={'Anluj'}
               onPress={() => _inputBarCancel()}
+              value={ListName}
+            />
+          </View>
+        </View>
+      )}
+
+      {ShowDetailsBar && (
+        <View style={styles.inputBar}>
+          <View style={styles.bar}>
+            <MySmallButton title={'Edytuj'} onPress={() => _editListName()} />
+            <MySmallButton
+              title={'Usuń'}
+              onPress={() => _deleteList()}
               value={ListName}
             />
           </View>
@@ -190,7 +220,7 @@ export default function Lists(props, {listTitleCallback}) {
           <View style={styles.view}>
             <TouchableOpacity
               onPress={_onPress.bind(this, item)}
-              onLongPress={_onLongPress.bind(this, item.id)}>
+              onLongPress={_onLongPress.bind(this, item)}>
               <Text style={styles.item}>{item.title}</Text>
             </TouchableOpacity>
           </View>

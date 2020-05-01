@@ -30,7 +30,7 @@ function App() {
         <Stack.Screen
           name="Lists"
           component={Lists}
-          options={{title: 'All categories'}}
+          options={{title: 'Wszystkie listy'}}
         />
         <Stack.Screen
           name="Tasks"
