@@ -22,8 +22,6 @@ function App() {
     });
   });
 
-  const [ListBarTitle, setListBarTitle] = useState('Task list'); //TODO
-
   return (
     <NavigationContainer>
       <Stack.Navigator>
@@ -35,7 +33,7 @@ function App() {
         <Stack.Screen
           name="Tasks"
           component={Tasks}
-          options={{title: ListBarTitle}}
+          options={{title: 'Lista zadań'}}
         />
       </Stack.Navigator>
     </NavigationContainer>

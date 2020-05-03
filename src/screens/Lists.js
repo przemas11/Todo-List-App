@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {Text, StyleSheet, View, FlatList, TouchableOpacity} from 'react-native';
-//import {useNavigation} from '@react-navigation/native';
 import {TextInput} from 'react-native-gesture-handler';
+
 import MyButton from '../interface/MyButton';
 import MySmallButton from '../interface/MySmallButton';
 
@@ -120,7 +120,7 @@ export default function Lists(props) {
   function _onPress(item) {
     setCurrentList(item);
     //open task list for selected category
-    props.navigation.navigate('Tasks');
+    props.navigation.navigate('Tasks', {currentList: item});
   }
 
   function _onLongPress(item) {
