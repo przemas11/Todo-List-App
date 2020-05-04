@@ -19,10 +19,15 @@ export default function Lists(props) {
   function _showInputBar() {
     setShowInputBar(true);
   }
-
   function _hideInputBar() {
     setShowInputBar(false);
     setListName('');
+  }
+  function _showModifyBar() {
+    setShowDetailsBar(true);
+  }
+  function _hideModifyBar() {
+    setShowDetailsBar(false);
   }
 
   function _inputBarConfirm() {
@@ -37,9 +42,9 @@ export default function Lists(props) {
             function(tx1, res) {
               //create new table with tasks
               db.transaction(function(tx2) {
-                console.log(
-                  'Tworzenie nowej tabeli zadan, id: ' + res.insertId,
-                );
+                // console.log(
+                //   'Tworzenie nowej tabeli zadan, id: ' + res.insertId,
+                // );
                 tx2.executeSql(
                   `CREATE TABLE IF NOT EXISTS list${
                     res.insertId
@@ -58,7 +63,6 @@ export default function Lists(props) {
     else if (InputMode === 1) {
       if (ListName) {
         if (CurrentList) {
-          console.log('edit');
           db.transaction(function(tx) {
             tx.executeSql(
               `UPDATE lists SET title = ? WHERE id = ${CurrentList.id};`,
@@ -69,6 +73,7 @@ export default function Lists(props) {
         }
       }
     }
+    _getLists();
   }
 
   function _inputBarCancel() {
@@ -85,7 +90,6 @@ export default function Lists(props) {
             buffer.push(res.rows.item(i));
           }
           setListsDB(buffer);
-          //console.log(buffer);
         } else {
           setListsDB([]);
         }
@@ -115,16 +119,18 @@ export default function Lists(props) {
   //Reload lists when refreshing the DOM
   useEffect(() => {
     _getLists();
-  });
+  }, []);
 
   function _onPress(item) {
     setCurrentList(item);
+    _hideInputBar();
+    _hideModifyBar();
     //open task list for selected category
     props.navigation.navigate('Tasks', {currentList: item});
   }
 
   function _onLongPress(item) {
-    setShowDetailsBar(true);
+    _showModifyBar();
     _hideInputBar();
     setCurrentList(item);
     //_deleteList(id);
@@ -133,12 +139,13 @@ export default function Lists(props) {
   function _addNewList() {
     setInputMode(0);
     _showInputBar();
+    _hideModifyBar();
   }
 
   function _editListName() {
     setInputMode(1);
     _showInputBar();
-    setShowDetailsBar(false);
+    _hideModifyBar();
   }
 
   //Delete selected lists from the DB
@@ -160,9 +167,10 @@ export default function Lists(props) {
           function(tx2, res) {},
         );
       });
+      _getLists();
     }
     setCurrentList(undefined);
-    setShowDetailsBar(false);
+    _hideModifyBar();
   }
 
   return (
@@ -192,11 +200,7 @@ export default function Lists(props) {
               title={'Potwierdź'}
               onPress={() => _inputBarConfirm()}
             />
-            <MySmallButton
-              title={'Anluj'}
-              onPress={() => _inputBarCancel()}
-              value={ListName}
-            />
+            <MySmallButton title={'Anluj'} onPress={() => _inputBarCancel()} />
           </View>
         </View>
       )}
@@ -205,11 +209,7 @@ export default function Lists(props) {
         <View style={styles.inputBar}>
           <View style={styles.bar}>
             <MySmallButton title={'Edytuj'} onPress={() => _editListName()} />
-            <MySmallButton
-              title={'Usuń'}
-              onPress={() => _deleteList()}
-              value={ListName}
-            />
+            <MySmallButton title={'Usuń'} onPress={() => _deleteList()} />
           </View>
         </View>
       )}

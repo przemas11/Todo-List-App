@@ -16,6 +16,8 @@ export default function Tasks({route, navigation}) {
   const [CurrentTask, setCurrentTask] = useState(undefined); //?
   const [InputMode, setInputMode] = useState(0);
 
+  const forceUpdate = React.useReducer(() => ({}))[1];
+
   let temp = {id: undefined, title: 'Lista zadań'};
   if (route.params.currentList) {
     temp = route.params.currentList;
@@ -26,17 +28,21 @@ export default function Tasks({route, navigation}) {
   function _showInputBar() {
     setShowInputBar(true);
   }
-
   function _hideInputBar() {
     setShowInputBar(false);
     setTaskName('');
+  }
+  function _showModifyBar() {
+    setShowDetailsBar(true);
+  }
+  function _hideModifyBar() {
+    setShowDetailsBar(false);
   }
 
   function _inputBarConfirm() {
     //ADD NEW TASK
     if (InputMode === 0) {
       if (TaskName) {
-        console.log('dopisuje nowe zadanie');
         //insert new task to the DB
         db.transaction(function(tx) {
           tx.executeSql(
@@ -44,19 +50,17 @@ export default function Tasks({route, navigation}) {
               currentList.current.id
             }(title, done) VALUES (?,?);`,
             [TaskName, false],
-            function(tx1, res) {
-              console.log('dodalem');
-            },
+            function(tx1, res) {},
           );
         });
-        _hideInputBar();
+        setTaskName('');
+        //_hideInputBar();
       }
     }
     //EDIT EXISTING LIST'S NAME
     else if (InputMode === 1) {
       if (TaskName) {
         if (CurrentTask) {
-          console.log('edit');
           db.transaction(function(tx) {
             tx.executeSql(
               `UPDATE list${currentList.current.id} SET title = ? WHERE id = ${
@@ -90,8 +94,6 @@ export default function Tasks({route, navigation}) {
               buffer.push(res.rows.item(i));
             }
             setTasksDB(buffer);
-            // console.log('zadanka:'); //rerender loop ??? TODO
-            // console.log(buffer);
           } else {
             setTasksDB([]);
           }
@@ -101,62 +103,63 @@ export default function Tasks({route, navigation}) {
   }
 
   //Reload lists when refreshing the DOM
-  // useEffect(() => {
-  //   _getTasks();
-  // });
+  useEffect(() => {
+    _getTasks();
+  }, []);
 
   function _onPress(item) {
     setCurrentTask(item);
     db.transaction(function(tx) {
       tx.executeSql(
         `UPDATE list${currentList.current.id} SET done = ? WHERE id = ${
-          CurrentTask.id
+          item.id
         };`,
         [!item.done],
         function(tx1, res) {
-          //console.log('zmienilem stan z ', item.done, ' na ', !item.done);
+          item.done = !item.done;
+
+          // let index = TasksDB.findIndex(x => x.id === item.id);
+          // let temp = TasksDB;
+          // temp[index].done = !temp[index].done;
+          // setTasksDB(temp);
+
+          forceUpdate();
         },
       );
     });
-    _getTasks();
   }
 
   function _onLongPress(item) {
-    setShowDetailsBar(true);
+    _showModifyBar();
     _hideInputBar();
     setCurrentTask(item);
-    //_deleteTask(id);
   }
 
   function _addNewTask() {
-    _getTasks(); //TEMP too many rerenders with useEffect :/
     setInputMode(0);
     _showInputBar();
+    _hideModifyBar();
   }
 
   function _editTaskName() {
     setInputMode(1);
     _showInputBar();
-    setShowDetailsBar(false);
+    _hideModifyBar();
   }
 
   //Delete selected lists from the DB
   function _deleteTask() {
     //delete selected task from list
-    console.log('ID:', currentList.current.id);
-    console.log('task ID:', CurrentTask.id);
     if (currentList.current.id) {
       db.transaction(function(tx) {
         tx.executeSql(
           `DELETE FROM list${currentList.current.id} WHERE id=?;`,
           [CurrentTask.id],
-          function(tx2, res) {
-            console.log('usuniete');
-          },
+          function(tx2, res) {},
         );
       });
       setCurrentTask(undefined);
-      setShowDetailsBar(false);
+      _hideModifyBar();
       _getTasks();
     }
   }
@@ -175,17 +178,14 @@ export default function Tasks({route, navigation}) {
             onChangeText={text => {
               setTaskName(text);
             }}
+            value={TaskName}
           />
           <View style={styles.bar}>
             <MySmallButton
               title={'Potwierdź'}
               onPress={() => _inputBarConfirm()}
             />
-            <MySmallButton
-              title={'Anluj'}
-              onPress={() => _inputBarCancel()}
-              value={TaskName}
-            />
+            <MySmallButton title={'Anluj'} onPress={() => _inputBarCancel()} />
           </View>
         </View>
       )}
@@ -194,11 +194,7 @@ export default function Tasks({route, navigation}) {
         <View style={styles.inputBar}>
           <View style={styles.bar}>
             <MySmallButton title={'Edytuj'} onPress={() => _editTaskName()} />
-            <MySmallButton
-              title={'Usuń'}
-              onPress={() => _deleteTask()}
-              value={TaskName}
-            />
+            <MySmallButton title={'Usuń'} onPress={() => _deleteTask()} />
           </View>
         </View>
       )}
