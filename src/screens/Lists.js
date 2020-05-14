@@ -1,5 +1,12 @@
 import React, {useState, useEffect} from 'react';
-import {Text, StyleSheet, View, FlatList, TouchableOpacity} from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+} from 'react-native';
 import {TextInput} from 'react-native-gesture-handler';
 
 import MyButton from '../interface/MyButton';
@@ -8,6 +15,17 @@ import MySmallButton from '../interface/MySmallButton';
 import {openDatabase} from 'react-native-sqlite-storage';
 var db = openDatabase({name: 'UserDatabase.db'});
 
+var sortOptions = [
+  {
+    id: 0,
+    text: 'alfabetycznie A-Z',
+  },
+  {
+    id: 1,
+    text: 'alfabetycznie Z-A',
+  },
+];
+
 export default function Lists(props) {
   const [ListName, setListName] = useState('');
   const [ShowInputBar, setShowInputBar] = useState(false);
@@ -15,6 +33,19 @@ export default function Lists(props) {
   const [ListsDB, setListsDB] = useState([]);
   const [CurrentList, setCurrentList] = useState(undefined);
   const [InputMode, setInputMode] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    props.navigation.setOptions({
+      headerRight: () => (
+        <MyButton
+          style={styles.headerButton}
+          title={'Sortuj'}
+          onPress={() => setModalVisible(true)}
+        />
+      ),
+    });
+  }, [modalVisible, props.navigation]);
 
   function _showInputBar() {
     setShowInputBar(true);
@@ -173,6 +204,10 @@ export default function Lists(props) {
     _hideModifyBar();
   }
 
+  function _sortList(id) {
+    console.log('click: ', id);
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.bar}>
@@ -213,6 +248,36 @@ export default function Lists(props) {
           </View>
         </View>
       )}
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}>
+        <View>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Sortowanie list</Text>
+            <FlatList
+              data={sortOptions}
+              renderItem={({item}) => (
+                <View>
+                  <TouchableOpacity onPress={() => _sortList(item.id)}>
+                    <Text style={styles.modalOption}>{item.text}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+
+            <MySmallButton
+              title={'Anuluj'}
+              onPress={() => setModalVisible(!modalVisible)}
+              style={{marginTop: 20}}
+            />
+          </View>
+        </View>
+      </Modal>
 
       <FlatList
         data={ListsDB}
@@ -256,5 +321,36 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 30,
     height: 60,
+  },
+  headerButton: {
+    fontSize: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 12,
+  },
+  modalView: {
+    margin: 30,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 10,
+  },
+  modalText: {
+    fontSize: 33,
+    marginBottom: 30,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  modalOption: {
+    fontSize: 25,
+    marginBottom: 20,
   },
 });

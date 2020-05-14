@@ -1,6 +1,6 @@
 // import 'react-native-gesture-handler';
-import React, {useState, useEffect} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import React, {useEffect} from 'react';
+import {NavigationContainer, Text, Button} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import {openDatabase} from 'react-native-sqlite-storage';
@@ -28,25 +28,20 @@ function App() {
         <Stack.Screen
           name="Lists"
           component={Lists}
-          options={{title: 'Wszystkie listy'}}
+          options={{
+            title: 'Wszystkie listy',
+          }}
         />
         <Stack.Screen
           name="Tasks"
           component={Tasks}
-          options={{title: 'Lista zadań'}}
+          options={{
+            title: 'Lista zadań',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   }
-// });
 
 export default App;

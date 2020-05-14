@@ -3,7 +3,7 @@ import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 
 const MySmallButton = props => {
   return (
-    <View style={{width: '45%'}}>
+    <View style={[{width: '45%'}, props.style]}>
       <TouchableOpacity onPress={props.onPress}>
         <Text style={styles.MySmallButtonText}>{props.title}</Text>
       </TouchableOpacity>

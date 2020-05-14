@@ -1,5 +1,12 @@
 import React, {useRef, useEffect, useState} from 'react';
-import {Text, StyleSheet, View, FlatList, TouchableOpacity} from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+} from 'react-native';
 import {TextInput} from 'react-native-gesture-handler';
 
 import MyButton from '../interface/MyButton';
@@ -8,6 +15,25 @@ import MySmallButton from '../interface/MySmallButton';
 import {openDatabase} from 'react-native-sqlite-storage';
 var db = openDatabase({name: 'UserDatabase.db'});
 
+var sortOptions = [
+  {
+    id: 0,
+    text: 'alfabetycznie A-Z',
+  },
+  {
+    id: 1,
+    text: 'alfabetycznie Z-A',
+  },
+  {
+    id: 2,
+    text: 'wg statusu\n(najpierw zrobione)',
+  },
+  {
+    id: 3,
+    text: 'wg statusu\n(najpierw niezrobione)',
+  },
+];
+
 export default function Tasks({route, navigation}) {
   const [TaskName, setTaskName] = useState('');
   const [ShowInputBar, setShowInputBar] = useState(false);
@@ -15,8 +41,21 @@ export default function Tasks({route, navigation}) {
   const [TasksDB, setTasksDB] = useState([]);
   const [CurrentTask, setCurrentTask] = useState(undefined); //?
   const [InputMode, setInputMode] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const forceUpdate = React.useReducer(() => ({}))[1];
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <MyButton
+          style={styles.headerButton}
+          title={'Sortuj'}
+          onPress={() => setModalVisible(true)}
+        />
+      ),
+    });
+  }, [modalVisible, navigation]);
 
   let temp = {id: undefined, title: 'Lista zadań'};
   if (route.params.currentList) {
@@ -164,6 +203,10 @@ export default function Tasks({route, navigation}) {
     }
   }
 
+  function _sortList(id) {
+    console.log('click: ', id);
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.bar}>
@@ -198,6 +241,36 @@ export default function Tasks({route, navigation}) {
           </View>
         </View>
       )}
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}>
+        <View>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Sortowanie zadań</Text>
+            <FlatList
+              data={sortOptions}
+              renderItem={({item}) => (
+                <View>
+                  <TouchableOpacity onPress={() => _sortList(item.id)}>
+                    <Text style={styles.modalOption}>{item.text}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+
+            <MySmallButton
+              title={'Anuluj'}
+              onPress={() => setModalVisible(!modalVisible)}
+              style={{marginTop: 20}}
+            />
+          </View>
+        </View>
+      </Modal>
 
       <FlatList
         data={TasksDB}
@@ -249,5 +322,37 @@ const styles = StyleSheet.create({
     fontSize: 30,
     height: 60,
     textDecorationLine: 'line-through',
+  },
+  headerButton: {
+    fontSize: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 12,
+  },
+  modalView: {
+    margin: 30,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 10,
+  },
+  modalText: {
+    fontSize: 33,
+    marginBottom: 30,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  modalOption: {
+    fontSize: 23,
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });
