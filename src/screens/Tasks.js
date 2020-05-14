@@ -42,6 +42,7 @@ export default function Tasks({route, navigation}) {
   const [CurrentTask, setCurrentTask] = useState(undefined); //?
   const [InputMode, setInputMode] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [OrderBy, setOrderBy] = useState('');
 
   const forceUpdate = React.useReducer(() => ({}))[1];
 
@@ -124,7 +125,7 @@ export default function Tasks({route, navigation}) {
   function _getTasks() {
     db.transaction(function(tx) {
       tx.executeSql(
-        `SELECT * FROM list${currentList.current.id};`,
+        `SELECT * FROM list${currentList.current.id}${OrderBy};`,
         [],
         function(_tx, res) {
           if (res.rows.length > 0) {
@@ -204,7 +205,31 @@ export default function Tasks({route, navigation}) {
   }
 
   function _sortList(id) {
-    console.log('click: ', id);
+    //sort alphabetically A-Z
+    if (id === 0) {
+      setOrderBy(' ORDER BY title ASC');
+    }
+    //sort alphabetically Z-A
+    else if (id === 1) {
+      setOrderBy(' ORDER BY title DESC');
+    }
+    //sort by status - done first
+    else if (id === 2) {
+      setOrderBy(' ORDER BY done ASC');
+    }
+    //sort by status - undone first
+    else if (id === 3) {
+      setOrderBy(' ORDER BY done DESC');
+    }
+    //unspecified id
+    else {
+      console.log('sort error');
+      setOrderBy('');
+    }
+    setModalVisible(false);
+
+    _getTasks();
+    //forceUpdate();
   }
 
   return (

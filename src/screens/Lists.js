@@ -34,6 +34,9 @@ export default function Lists(props) {
   const [CurrentList, setCurrentList] = useState(undefined);
   const [InputMode, setInputMode] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [OrderBy, setOrderBy] = useState('');
+
+  const forceUpdate = React.useReducer(() => ({}))[1];
 
   useEffect(() => {
     props.navigation.setOptions({
@@ -114,7 +117,7 @@ export default function Lists(props) {
   //Get all lists from the DB
   function _getLists() {
     db.transaction(function(tx) {
-      tx.executeSql('SELECT * FROM lists;', [], function(_tx, res) {
+      tx.executeSql(`SELECT * FROM lists${OrderBy};`, [], function(_tx, res) {
         if (res.rows.length > 0) {
           let buffer = [];
           for (let i = 0; i < res.rows.length; i++) {
@@ -205,7 +208,23 @@ export default function Lists(props) {
   }
 
   function _sortList(id) {
-    console.log('click: ', id);
+    //sort alphabetically A-Z
+    if (id === 0) {
+      setOrderBy(' ORDER BY title ASC');
+    }
+    //sort alphabetically Z-A
+    else if (id === 1) {
+      setOrderBy(' ORDER BY title DESC');
+    }
+    //unspecified id
+    else {
+      console.log('sort error');
+      setOrderBy('');
+    }
+    setModalVisible(false);
+
+    _getLists();
+    //forceUpdate();
   }
 
   return (
