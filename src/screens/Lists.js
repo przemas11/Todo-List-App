@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useState, useEffect} from 'react';
 import {
   Text,
@@ -49,6 +50,10 @@ export default function Lists(props) {
       ),
     });
   }, [modalVisible, props.navigation]);
+
+  useEffect(() => {
+    _getLists();
+  }, [OrderBy]);
 
   function _showInputBar() {
     setShowInputBar(true);
@@ -222,9 +227,6 @@ export default function Lists(props) {
       setOrderBy('');
     }
     setModalVisible(false);
-
-    _getLists();
-    //forceUpdate();
   }
 
   return (

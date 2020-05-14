@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useRef, useEffect, useState} from 'react';
 import {
   Text,
@@ -56,7 +57,11 @@ export default function Tasks({route, navigation}) {
         />
       ),
     });
-  }, [modalVisible, navigation]);
+  }, []);
+
+  useEffect(() => {
+    _getTasks();
+  }, [OrderBy]);
 
   let temp = {id: undefined, title: 'Lista zadań'};
   if (route.params.currentList) {
@@ -227,9 +232,6 @@ export default function Tasks({route, navigation}) {
       setOrderBy('');
     }
     setModalVisible(false);
-
-    _getTasks();
-    //forceUpdate();
   }
 
   return (
