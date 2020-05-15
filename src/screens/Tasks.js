@@ -220,11 +220,11 @@ export default function Tasks({route, navigation}) {
     }
     //sort by status - done first
     else if (id === 2) {
-      setOrderBy(' ORDER BY done ASC');
+      setOrderBy(' ORDER BY done DESC, title');
     }
     //sort by status - undone first
     else if (id === 3) {
-      setOrderBy(' ORDER BY done DESC');
+      setOrderBy(' ORDER BY done ASC, title');
     }
     //unspecified id
     else {
