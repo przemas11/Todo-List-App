@@ -136,6 +136,23 @@ export default function Lists(props) {
     });
   }
 
+  //Create copy of table with sorted elements
+  function _sortLists() {
+    db.transaction(function(tx) {
+      tx.executeSql(`SELECT * FROM lists${OrderBy};`, [], function(_tx, res) {
+        if (res.rows.length > 0) {
+          let buffer = [];
+          for (let i = 0; i < res.rows.length; i++) {
+            buffer.push(res.rows.item(i));
+          }
+          setListsDB(buffer);
+        } else {
+          setListsDB([]);
+        }
+      });
+    });
+  }
+
   function _debugLogAllTables() {
     db.transaction(function(tx) {
       tx.executeSql(
@@ -212,7 +229,7 @@ export default function Lists(props) {
     _hideModifyBar();
   }
 
-  function _sortList(id) {
+  function _sortListSelection(id) {
     //sort alphabetically A-Z
     if (id === 0) {
       setOrderBy(' ORDER BY title ASC');
@@ -284,7 +301,7 @@ export default function Lists(props) {
               data={sortOptions}
               renderItem={({item}) => (
                 <View>
-                  <TouchableOpacity onPress={() => _sortList(item.id)}>
+                  <TouchableOpacity onPress={() => _sortListSelection(item.id)}>
                     <Text style={styles.modalOption}>{item.text}</Text>
                   </TouchableOpacity>
                 </View>
